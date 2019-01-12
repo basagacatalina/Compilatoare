@@ -10,6 +10,7 @@
 	{
 	     char* nume;
 	     int valoare;
+	     int initializat;
 	     TVAR* next;
 	  
 	  public:
@@ -21,7 +22,9 @@
 	     int exists(char* n);
              void add(char* n, int v = -1);
              int getValue(char* n);
+             int getInitializat(char* n);
 	     void setValue(char* n, int v);
+	     void setstare(char* n);
 	};
 
 	TVAR* TVAR::head;
@@ -32,6 +35,7 @@
 	 this->nume = new char[strlen(n)+1];
 	 strcpy(this->nume,n);
 	 this->valoare = v;
+	 this->initializat=0;
 	 this->next = NULL;
 	}
 
@@ -91,6 +95,31 @@
 	      tmp = tmp->next;
 	    }
 	  }
+	
+	int TVAR::getInitializat(char* n)
+	{
+	  TVAR* tmp= TVAR::head;
+	  while(tmp!=NULL)
+		{
+		 if(strcmp(tmp->nume,n)==0)
+		   return tmp->initializat;
+		 tmp=tmp->next;
+		}
+	return -1;
+	}
+
+	void TVAR::setstare(char*n)
+	{
+	    TVAR* tmp = TVAR::head;
+	    while(tmp != NULL)
+	    {
+	      if(strcmp(tmp->nume,n) == 0)
+	      {
+		tmp->initializat=1;
+	      }
+	      tmp = tmp->next;
+	    }
+	  }
 
 	TVAR* ts = NULL;
 %}
@@ -116,7 +145,7 @@ S:
         |
 	TOK_PROG prog_name TOK_DECLARE dec_list TOK_BEGIN stmt_list TOK_END '.'
 	|
-	error '.'  
+	error   
 	  { Correct =0; }
 	;
 prog_name : TOK_VARIABLE
@@ -141,7 +170,7 @@ dec: id_list ':' type
       			 }
                   else 
 			{
-		 	  sprintf(msg, "%d:%d Eroare semantica: Declaratii multiple pentru variabila %s!",@1.first_line, @1.first_column, sir);
+		 	  sprintf(msg, "Eroare semantica: Declaratii multiple pentru variabila %s!",sir);
 			  yyerror(msg);
 			  YYERROR;
 			 }
@@ -192,17 +221,18 @@ assign: TOK_VARIABLE TOK_ASSIGN exp
 			{
 			  if(ts->exists($1)==0)
 				{
-		 	  	sprintf(msg, "%d:%d Eroare semantica: Variabila neclarata la atribuire %s!",@1.first_line, @1.first_column, $1);
+		 	  	sprintf(msg, "Eroare semantica: Variabila neclarata la atribuire %s!",$1);
 			  	yyerror(msg);
 			  	YYERROR;
 				}
 			else {
 				ts->setValue($1,$3);
+				ts->setstare($1);
 			     }
 
 			}
 		else 	{
-		 	  sprintf(msg, "%d:%d Eroare semantica: Lista de variabile goala pentru atribuire!",@1.first_line, @1.first_column);
+		 	  sprintf(msg, " Eroare semantica: Lista de variabile goala pentru atribuire!");
 			  yyerror(msg);
 			  YYERROR;
 			 }
@@ -217,15 +247,15 @@ exp:
   exp TOK_MINUS term  { $$=$1-$3; }
   ;  
 term:
-	|
-	factor {$$=$1; }
+     |	
+     factor {$$=$1; }
 	|
 	term TOK_MULTIPLY factor {$$=$1*$3; }
 	|
 	term TOK_DIVIDE factor {
               		if($3==0)
 				{
-		 	  	sprintf(msg, "%d:%d Eroare semantica: Impartire la zero!",@1.first_line, @1.first_column);
+		 	  	sprintf(msg, " Eroare semantica: Impartire la zero!");
 			  	yyerror(msg);
 			  	YYERROR;
 				 }
@@ -241,17 +271,17 @@ factor:
 			{
 				if(ts->exists($1)==0)
 				{
-		 	  	sprintf(msg, "%d:%d Eroare semantica: Variabila neclarata la atribuire %s!",@1.first_line, @1.first_column, $1);
+		 	  	sprintf(msg, "Eroare semantica: Variabila neclarata la atribuire %s!",$1);
 			  	yyerror(msg);
 			  	YYERROR;
 				 }
 				else
 				{
-					if(ts->getValue($1)!=-1)
+					if(ts->getInitializat($1)==1)
 				  		$$=ts->getValue($1);
 					else
 					{
-		 	  			sprintf(msg, "%d:%d Eroare semantica: Variabila neinitializata la atribuire %s!",@1.first_line, @1.first_column, $1);
+		 	  			sprintf(msg, "Eroare semantica: Variabila neinitializata la atribuire %s!",$1);
 			  			yyerror(msg);
 			  			YYERROR;
 				 }
@@ -260,7 +290,7 @@ factor:
 			}
 		else
 			{
-		 	  sprintf(msg, "%d:%d Eroare semantica: Lista de variabile goala!",@1.first_line, @1.first_column);
+		 	  sprintf(msg, "Eroare semantica: Lista de variabile goala!");
 			  yyerror(msg);
 			  YYERROR;
 			 }
@@ -277,13 +307,12 @@ read: TOK_READ TOK_LEFT id_list TOK_RIGHT
 		{
 		 	if(ts->exists(sir)==1)
 			{
-			  //se va citi valoarea si se va atribui 
-				//pentru functionare algoritm, se va atribui valoarea 0 in cazul nostru
-			 ts->setValue(sir,0);
+			  //se va citi valoarea si se va atribui + marcam ca a fost initializata
+			 ts->setstare(sir);
       			 }
                   	else 
 			{
-		 	  sprintf(msg, "%d:%d Eroare semantica: Variabila %s nu este declarata!",@1.first_line, @1.first_column, sir);
+		 	  sprintf(msg, "Eroare semantica: Variabila %s nu este declarata!",sir);
 			  yyerror(msg);
 			  YYERROR;
 			 }
@@ -298,19 +327,19 @@ write: TOK_WRITE  TOK_LEFT id_list TOK_RIGHT
 		{
 		 	if(ts->exists(sir)==1)
 			{
-			  if(ts->getValue(sir)!=-1)
+			  if(ts->getInitializat(sir)==1)
 			     {//se va printa valoarea 
 				}
 			  else 
 				{
-		 	 	 sprintf(msg, "%d:%d Eroare semantica: Variabila %s nu este initializata!",@1.first_line, @1.first_column, sir);
+		 	 	 sprintf(msg, "Eroare semantica: Variabila %s nu este initializata!",sir);
 			  	 yyerror(msg);
 			  	 YYERROR;
 				 }
       			 }
                   	else 
 			{
-		 	  sprintf(msg, "%d:%d Eroare semantica: Variabila %s nu este declarata!",@1.first_line, @1.first_column, sir);
+		 	  sprintf(msg, "Eroare semantica: Variabila %s nu este declarata!",sir);
 			  yyerror(msg);
 			  YYERROR;
 			 }
@@ -330,7 +359,7 @@ index_exp: TOK_VARIABLE TOK_ASSIGN exp TOK_TO exp
 			{
 				if(ts->exists($1)==0)
 					{
-                                        sprintf(msg, "%d:%d Eroare semantica: Variabila neclarata la atribuire %s!",@1.first_line, @1.first_column, $1);
+                                        sprintf(msg, "Eroare semantica: Variabila neclarata la atribuire %s!",$1);
 			  		yyerror(msg);
 			  		YYERROR;
 				 	}
@@ -342,7 +371,7 @@ index_exp: TOK_VARIABLE TOK_ASSIGN exp TOK_TO exp
 			}
 		else
 			{
-		 	  sprintf(msg, "%d:%d Eroare semantica: Lista de variabile goala!",@1.first_line, @1.first_column);
+		 	  sprintf(msg, "Eroare semantica: Lista de variabile goala!");
 			  yyerror(msg);
 			  YYERROR;
 			 }

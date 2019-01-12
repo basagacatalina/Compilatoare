@@ -1,0 +1,9 @@
+program Exemplul_1
+var
+a1: integer;
+b1: integer
+begin
+read(a1);
+a1:=b1 div 7;
+write(b1)
+end.

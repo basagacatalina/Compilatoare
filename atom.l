@@ -17,7 +17,7 @@
 "for"		{ colNo+=3; return TOK_FOR; }
 "do"        	{ colNo+=2; return TOK_DO; }
 "to" 		{ colNo+=2; return TOK_TO; }
-[a-zA-Z][a-zA-Z0-9_]* { yylval.sir = new char[strlen(yytext)+1]; strcpy(yylval.sir,yytext); return TOK_VARIABLE; }
+[a-zA-Z][a-zA-Z0-9_]* {yylval.sir = new char[strlen(yytext)+1]; strcpy(yylval.sir,yytext); return TOK_VARIABLE; }
 0|[1-9][0-9]* { yylval.val = atoi(yytext); return TOK_NUMBER; }
 ";"		{ colNo++; return ';'; }
 "."		{ colNo++; return '.'; }
